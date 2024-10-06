@@ -208,4 +208,37 @@ return route_frames
 ## Summary
 This function processes a dataset index file to filter and collect paths to frames based on specified weather conditions and towns. It constructs full paths to the data, extracts relevant information using regex, and logs the number of frames collected.
 
-If you have any specific questions about any part of the function, feel free to ask!
+# 如何加载的数据集中的数据？
+## 如果是加载Carla data的话
+1.在初始化dataloader的时候，将文件的目录加载进去（可能是为了降低内存消耗）
+2.在需要使用数据的时候调用_extract_data_item()函数，所有的读取和数据的处理全部写在这个函数里
+按照字典格式使用存在data这个变量里，
+data["waypoints"]， data['lidar']，data['num_points']，data["target_point"]，data["measurements"] = mes（这个里面包含了很多车辆自身相关的属性如速度，位置等）
+data['velocity'] = torch.from_numpy(np.array([measurements['speed']])).float()
+data['command'] = torch.from_numpy(np.array(cmd))
+
+图像相关的数据必有的是：
+data["rgb_front"] 
+data["rgb_center"]
+可选的有：
+data["seg"] = seg_image
+data["seg_left"] = seg_left_image
+data["seg_right"] = seg_right_image
+
+data["depth"] = depth_image
+data["depth_left"] = depth_left_image
+data["depth_right"] = depth_right_image
+
+data["rgb_left"] = rgb_left_image
+data["rgb_right"] = rgb_right_image
+data["rgb_rear"] = rgb_rear_image
+
+** 数据中有一项是actor data表示Carla模拟里包括车辆和步行者，还包括传感器、交通标志、交通信号灯和观众的元素 **
+heatmap_utils.py 里有generate_heatmap(measurements, actors_data, pixels_per_meter=5, max_distance=30):应该是负责整合ego vehicle和actors数据到一个图上，大体流程是通过rotation matrix，把各种探测到的actor按照不同类型标记到heatmap上
+def generate_det_data(heatmap, measurements, actors_data, pixels_per_meter=5, max_distance=30, return_object_ids=False):
+该函数处理heatmap和actor data，生成检测数据网格，其中包括检测到物体的概率、位置、方向和大小。它还可选择返回检测到的物体的网格位置。
+
+# 结合大模型的训练过程
+利用了一个开源的大模型项目LAVIS（https://github.com/salesforce/LAVIS）
+主要用到的参数被存到了config类(LAVIS\lavis\common\config.py)
+模型实现在了LAVIS\lavis\models\drive_models\drive.py下
