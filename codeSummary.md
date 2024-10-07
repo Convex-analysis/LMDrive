@@ -240,5 +240,15 @@ def generate_det_data(heatmap, measurements, actors_data, pixels_per_meter=5, ma
 
 # 结合大模型的训练过程
 利用了一个开源的大模型项目LAVIS（https://github.com/salesforce/LAVIS）
-主要用到的参数被存到了config类(LAVIS\lavis\common\config.py)
+主要用到的参数被存到了config类(LAVIS\lavis\common\config.py)，
+LMdrive的配置文件默认在(lavis/projects/lmdrive/notice_llava15_visual_encoder_r50_seq40.yaml)
 模型实现在了LAVIS\lavis\models\drive_models\drive.py下
+
+实现的逻辑是
+- 首先根据配置文件实例化Config类
+- 依靠Config初始化 
+  - task：负责初始化dataset和model，这个类是负责执行训练的最小单位
+  - dataset：task调用dataset builder构建dataset类 位置在：LAVIS\lavis\datasets\builders\carla_dataset_builder.py
+  - model：task调用model builder负责构建模型 位置在：LAVIS\lavis\models\drive_models\drive.py 模型基于blip实现的
+- 实例化一个runner负责实行当前的task，runner的类型只有一种：RunnerIter 
+  - 具体的训练过程在LAVIS\lavis\runners\runner_iter.py 的train() function
